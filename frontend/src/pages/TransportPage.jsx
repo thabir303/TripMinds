@@ -11,6 +11,9 @@ export const TransportPage = () => {
   const [itinerary, setItinerary] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  // Add this new state for travel data
+const [travelData, setTravelData] = useState({ distance: '', duration: '' });
+
 
   // Handle back navigation
   const handleBack = () => {
@@ -33,6 +36,8 @@ export const TransportPage = () => {
         setLoading(false);
       }
     };
+    
+
 
     if (id) {
       fetchItinerary();

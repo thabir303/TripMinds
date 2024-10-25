@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { GoogleMap, Marker, DirectionsRenderer } from '@react-google-maps/api';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
+import axios from 'axios';
 
 const containerStyle = {
   width: '100%',
@@ -16,12 +17,34 @@ const MapComponent = ({
   initialStartDate,
   initialEndDate,
   readOnly = true,
+  onTravelData = () => {}, // Callback to send travel data back to parent component
 }) => {
   const [directions, setDirections] = useState(null);
   const [error, setError] = useState(null);
   const mapRef = useRef(null);
 
-  // Calculate route between origin and destination
+  // Fetch travel time and distance from Google Distance Matrix API
+  const fetchDistanceAndDuration = async () => {
+    if (!initialOrigin || !initialDestination) return;
+
+    try {
+      const response = await axios.get(
+        `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${initialOrigin.lat},${initialOrigin.lng}&destinations=${initialDestination.lat},${initialDestination.lng}&key=AIzaSyAh2r1HyI0dXZzKfpjqGhCret0rb47LFeI`
+      );
+
+      const result = response.data.rows[0].elements[0];
+      const distance = result.distance.text;
+      const duration = result.duration.text;
+
+      // Send travel data back to parent component
+      onTravelData({ distance, duration });
+    } catch (err) {
+      // console.error('Error fetching travel data:', err);
+      // setError('Failed to retrieve distance and duration');
+    }
+  };
+
+  // Calculate the route using Directions API
   const calculateRoute = useCallback(() => {
     if (!initialOrigin || !initialDestination) return;
 
@@ -44,6 +67,7 @@ const MapComponent = ({
 
   useEffect(() => {
     calculateRoute();
+    fetchDistanceAndDuration();
   }, [calculateRoute]);
 
   return (
