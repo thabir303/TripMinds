@@ -202,13 +202,13 @@ const MapComponent = ({
   );
 };
 
-MapComponent.propTypes = {
-  initialOrigin: PropTypes.object,
-  initialDestination: PropTypes.object,
-  initialStartDate: PropTypes.instanceOf(Date),
-  initialEndDate: PropTypes.instanceOf(Date),
-  readOnly: PropTypes.bool,
-  onWeatherData: PropTypes.func,
-};
+// MapComponent.propTypes = {
+//   initialOrigin: PropTypes.object,
+//   initialDestination: PropTypes.object,
+//   initialStartDate: PropTypes.instanceOf(Date),
+//   initialEndDate: PropTypes.instanceOf(Date),
+//   readOnly: PropTypes.bool,
+//   onWeatherData: PropTypes.func,
+// };
 
 export default MapComponent;
