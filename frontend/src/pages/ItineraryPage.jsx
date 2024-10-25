@@ -1,4 +1,3 @@
-// src/pages/ItineraryPage.jsx
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useItinerary } from '../contexts/itineraryContext';
@@ -41,21 +40,20 @@ const ItineraryPage = () => {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
-
+  
     try {
-      // Validate form data
       if (!formData.currentLocation || !formData.destination || !formData.travelTime || !formData.travelDate) {
         throw new Error('Please fill in all fields');
       }
-
+  
       const token = getToken();
       if (!token) {
         throw new Error('Authentication required');
       }
-
-      // Create itinerary
+  
+      // Call the itinerary store API
       const response = await axios.post(
-        'http://localhost:3000/api/itinerary/create',
+        'http://localhost:3000/api/itinerary/store',
         {
           ...formData,
           username: user.username,
@@ -67,36 +65,22 @@ const ItineraryPage = () => {
           },
         }
       );
-
-      const { itineraryId: newItineraryId, data } = response.data;
-
-      // Update lat-long
-      await axios.put(
-        `http://localhost:3000/api/itinerary/${newItineraryId}/update-latlong`,
-        {
-          currentLocation: formData.currentLocation,
-          destination: formData.destination,
-        },
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-
-      setItineraryId(newItineraryId);
+  
+      const { data } = response.data;
+  
+      // Store the itinerary ID and update the state
+      setItineraryId(data._id);
       setItineraries(prev => [...prev, data]);
       setIsFormOpen(false);
       setItineraryGenerated(true);
-
     } catch (err) {
-      setError(err.message || 'An error occurred while creating the itinerary');
+      setError(err.response?.data?.message || 'An error occurred while creating the itinerary');
       console.error('Error:', err);
     } finally {
       setIsLoading(false);
     }
   };
+  
 
   return (
     <div className="container mx-auto p-6 max-w-4xl">

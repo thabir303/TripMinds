@@ -43,15 +43,46 @@ exports.createItinerary = async (req, res) => {
   }
 };
 
-// Get itinerary details by ID
 exports.getItineraryById = async (req, res) => {
   try {
-    const itinerary = await Itinerary.findById(req.params.id).populate('images');
+    let itinerary = await Itinerary.findById(req.params.id);
+
     if (!itinerary) {
-      return res.status(404).json({ status: false, message: 'Itinerary not found.' });
+      return res.status(404).json({
+        status: false,
+        message: 'Itinerary not found.',
+      });
     }
-    res.status(200).json({ status: true, data: itinerary });
+
+    // Mock the 'images' field to prevent errors in the frontend
+    const mockImages = [
+      { _id: '1', url: 'https://via.placeholder.com/150', description: 'Placeholder Image' }
+    ];
+
+    const { 
+      currentLocationLat, 
+      currentLocationLong, 
+      destinationLat, 
+      destinationLong 
+    } = itinerary;
+
+    res.status(200).json({
+      status: true,
+      data: {
+        ...itinerary.toObject(),
+        images: itinerary.images || mockImages, // Use mock images if none exist
+        currentLocationCoordinates: {
+          lat: currentLocationLat?.[0] || 0,
+          lng: currentLocationLong?.[0] || 0,
+        },
+        destinationCoordinates: {
+          lat: destinationLat?.[0] || 0,
+          lng: destinationLong?.[0] || 0,
+        },
+      },
+    });
   } catch (error) {
+    console.error('Error fetching itinerary:', error.message);
     res.status(500).json({
       status: false,
       message: 'Failed to fetch itinerary details.',
@@ -59,6 +90,7 @@ exports.getItineraryById = async (req, res) => {
     });
   }
 };
+
 
 // Update required fields (e.g., currentLocation, destination)
 exports.updateItineraryFields = async (req, res) => {
@@ -89,6 +121,46 @@ exports.updateItineraryFields = async (req, res) => {
     res.status(500).json({
       status: false,
       message: 'Failed to update itinerary.',
+      error: error.message,
+    });
+  }
+};
+
+exports.storeItinerary = async (req, res) => {
+  try {
+    const { username, currentLocation, destination, travelTime, travelDate } = req.body;
+
+    // Validate request body
+    if (!username || !currentLocation || !destination || !travelTime || !travelDate) {
+      return res.status(400).json({
+        status: false,
+        message: 'Required fields are missing. Please provide all itinerary details.',
+      });
+    }
+
+    // Create a new itinerary instance
+    const newItinerary = new Itinerary({
+      username,
+      currentLocation,
+      destination,
+      travelTime,
+      travelDate,
+    });
+
+    // Save itinerary to the database
+    const savedItinerary = await newItinerary.save();
+
+    // Send success response
+    res.status(201).json({
+      status: true,
+      message: 'Itinerary stored successfully.',
+      data: savedItinerary,
+    });
+  } catch (error) {
+    console.error('Error storing itinerary:', error.message);
+    res.status(500).json({
+      status: false,
+      message: 'Failed to store itinerary.',
       error: error.message,
     });
   }
@@ -177,6 +249,72 @@ exports.addFoodToItinerary = async (req, res) => {
     });
   }
 };
+
+// Helper function to get lat/lng from Google Maps API
+const getCoordinates = async (address) => {
+  try {
+    const response = await axios.get(
+      `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=AIzaSyAh2r1HyI0dXZzKfpjqGhCret0rb47LFeI`
+    );
+    const location = response.data.results[0].geometry.location;
+    return { lat: location.lat, lng: location.lng, placeId: response.data.results[0].place_id };
+  } catch (error) {
+    console.error(`Failed to get coordinates for ${address}:`, error.message);
+    throw new Error('Failed to get coordinates. Please try again.');
+  }
+};
+
+// Create a new itinerary with lat/lng from Google Maps API
+exports.storeItinerary = async (req, res) => {
+  try {
+    const { username, currentLocation, destination, travelTime, travelDate } = req.body;
+
+    // Validate request body
+    if (!username || !currentLocation || !destination || !travelTime || !travelDate) {
+      return res.status(400).json({
+        status: false,
+        message: 'Required fields are missing. Please provide all itinerary details.',
+      });
+    }
+
+    // Fetch lat/lng and place IDs for both locations
+    const currentCoords = await getCoordinates(currentLocation);
+    const destinationCoords = await getCoordinates(destination);
+
+    // Create a new itinerary instance
+    const newItinerary = new Itinerary({
+      username,
+      currentLocation,
+      destination,
+      travelTime,
+      travelDate,
+      currentLocationLat: [currentCoords.lat],
+      currentLocationLong: [currentCoords.lng],
+      currentLocationPlaceIds: [currentCoords.placeId],
+      destinationLat: [destinationCoords.lat],
+      destinationLong: [destinationCoords.lng],
+      destinationPlaceIds: [destinationCoords.placeId],
+    });
+
+    // Save itinerary to the database
+    const savedItinerary = await newItinerary.save();
+
+    // Send success response
+    res.status(201).json({
+      status: true,
+      message: 'Itinerary stored successfully.',
+      data: savedItinerary,
+    });
+  } catch (error) {
+    console.error('Error storing itinerary:', error.message);
+    res.status(500).json({
+      status: false,
+      message: 'Failed to store itinerary.',
+      error: error.message,
+    });
+  }
+};
+
 
 // Add an image to the itinerary
 exports.addImageToItinerary = async (req, res) => {

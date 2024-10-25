@@ -1,18 +1,70 @@
 // pages/TransportPage.jsx
-import React, { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import MapComponent from '../components/MapComponent';
+import axios from 'axios';
 
 export const TransportPage = () => {
   const { id } = useParams();
   const [activeTab, setActiveTab] = useState('map');
+  const [itinerary, setItinerary] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+
+  useEffect(() => {
+    const fetchItinerary = async () => {
+      try {
+        const response = await axios.get(`http://localhost:3000/api/itinerary/671aca656cfe64bb2d62032b`);
+        if (response.data.status && response.data.data) {
+          setItinerary(response.data.data);
+        } else {
+          throw new Error('Invalid data structure received');
+        }
+      } catch (err) {
+        console.error('Error fetching itinerary:', err);
+        setError(err.message || 'Failed to load itinerary details.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (id) {
+      fetchItinerary();
+    }
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-96">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative" role="alert">
+        <strong className="font-bold">Error: </strong>
+        <span className="block sm:inline">{error}</span>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6">
+    <div className="container mx-auto px-4 py-6">
       {/* Page Header */}
-      <div className="bg-white rounded-lg shadow-sm p-6">
+      <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Transport Planning</h1>
         <p className="text-gray-600 mt-2">Plan your journey and check weather conditions</p>
+        {itinerary && (
+          <div className="mt-2 text-sm text-gray-600">
+            <p>From: {itinerary.currentLocation}</p>
+            <p>To: {itinerary.destination}</p>
+            <p>Travel Date: {new Date(itinerary.travelDate).toLocaleDateString()}</p>
+            <p>Start Time: {itinerary.travelTime}</p>
+          </div>
+        )}
       </div>
 
       {/* Navigation Tabs */}
@@ -53,8 +105,20 @@ export const TransportPage = () => {
         {/* Tab Content */}
         <div className="p-6">
           {activeTab === 'map' && (
-            <div className="h-[600px]">
-              <MapComponent />
+            <div>
+              <MapComponent
+                initialOrigin={itinerary ? {
+                  lat: parseFloat(itinerary.currentLocationLat?.[0]),
+                  lng: parseFloat(itinerary.currentLocationLong?.[0])
+                } : null}
+                initialDestination={itinerary ? {
+                  lat: parseFloat(itinerary.destinationLat?.[0]),
+                  lng: parseFloat(itinerary.destinationLong?.[0])
+                } : null}
+                initialStartDate={itinerary ? new Date(itinerary.travelDate) : new Date()}
+                initialEndDate={itinerary ? new Date(itinerary.travelDate) : new Date()}
+                readOnly={true} // Add this prop to prevent map clicks in view mode
+              />
             </div>
           )}
 
@@ -94,14 +158,14 @@ export const TransportPage = () => {
 
           {activeTab === 'weather' && (
             <div className="bg-gray-50 p-6 rounded-lg">
-              {/* Weather information will be displayed here from MapComponent's weather data */}
+              {/* Weather information will be handled by MapComponent */}
             </div>
           )}
         </div>
       </div>
 
       {/* Action Buttons */}
-      <div className="flex flex-wrap gap-4">
+      <div className="flex flex-wrap gap-4 mt-6">
         <button className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
           Save Route
         </button>
@@ -115,3 +179,5 @@ export const TransportPage = () => {
     </div>
   );
 };
+
+export default TransportPage;
