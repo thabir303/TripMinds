@@ -1,21 +1,26 @@
 // pages/TransportPage.jsx
 import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom'; // Add useNavigate
 import MapComponent from '../components/MapComponent';
 import axios from 'axios';
 
 export const TransportPage = () => {
   const { id } = useParams();
+  const navigate = useNavigate(); // Initialize navigate hook
   const [activeTab, setActiveTab] = useState('map');
   const [itinerary, setItinerary] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Handle back navigation
+  const handleBack = () => {
+    navigate(-1); // This will go back to the previous route in history
+  };
 
   useEffect(() => {
     const fetchItinerary = async () => {
       try {
-        const response = await axios.get(`http://localhost:3000/api/itinerary/671aca656cfe64bb2d62032b`);
+        const response = await axios.get(`http://localhost:3000/api/itinerary/${id}`);
         if (response.data.status && response.data.data) {
           setItinerary(response.data.data);
         } else {
@@ -53,10 +58,34 @@ export const TransportPage = () => {
 
   return (
     <div className="container mx-auto px-4 py-6">
-      {/* Page Header */}
+      {/* Page Header with Back Button */}
       <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Transport Planning</h1>
-        <p className="text-gray-600 mt-2">Plan your journey and check weather conditions</p>
+        <div className="flex items-center mb-4">
+          <button
+            onClick={handleBack}
+            className="mr-4 p-2 hover:bg-gray-100 rounded-full transition-colors"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-6 w-6 text-gray-600"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M10 19l-7-7m0 0l7-7m-7 7h18"
+              />
+            </svg>
+          </button>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Transport Planning</h1>
+            <p className="text-gray-600 mt-2">Plan your journey and check weather conditions</p>
+          </div>
+        </div>
+        
         {itinerary && (
           <div className="mt-2 text-sm text-gray-600">
             <p>From: {itinerary.currentLocation}</p>

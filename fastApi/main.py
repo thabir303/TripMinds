@@ -85,7 +85,8 @@ async def search_captions(query: str = Query(...)):
             json={
                 "query_embedding": query_embedding,
                 "query_text": query
-            }
+            },
+             headers={'Content-Type': 'application/json'}
         )
         
         if response.status_code == 200:
