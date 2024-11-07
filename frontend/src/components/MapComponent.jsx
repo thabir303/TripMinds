@@ -29,7 +29,7 @@ const MapComponent = ({
 
     try {
       const response = await axios.get(
-        `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${initialOrigin.lat},${initialOrigin.lng}&destinations=${initialDestination.lat},${initialDestination.lng}&key=AIzaSyAh2r1HyI0dXZzKfpjqGhCret0rb47LFeI`
+        `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${initialOrigin.lat},${initialOrigin.lng}&destinations=${initialDestination.lat},${initialDestination.lng}&key=`
       );
 
       const result = response.data.rows[0].elements[0];
